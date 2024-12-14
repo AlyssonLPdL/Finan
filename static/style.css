@@ -42,6 +42,8 @@ h1 {
     border-radius: 10px;
     border: solid black 1px;
     cursor: pointer;
+} .btn-excel:hover, .btn-planilha:hover {
+    background-color: rgb(36, 94, 7);
 }
 
 #edit-form p {
@@ -71,6 +73,11 @@ form input, form select, form button {
     width: 200px;
     border-radius: 10px;
     border: black solid 1px;
+}
+
+form button:hover {
+    background-color: lightgrey;
+    cursor: pointer;
 }
 
 table {
