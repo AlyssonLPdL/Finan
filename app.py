@@ -154,7 +154,7 @@ def get_transaction(id):
 @app.route('/edit/<int:id>', methods=['POST'])
 def edit_transaction(id):
     data = request.json
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('finance.db') as conn: 
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE transactions
