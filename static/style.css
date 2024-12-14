@@ -10,12 +10,54 @@ h1 {
     color: #333;
 }
 
-form {
+.form-dados {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    display: grid;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
+    align-content: center;
+}
+
+#search-input {
+    border-radius: 10px;
+    width: 1000px;
+    border: black solid 1px;
+    padding: 8px;
+    margin-right: 50px;
+}
+
+.btn-excel, .btn-planilha {
+    height: 30px;
+    background-color: rgb(48, 123, 10);
+    color: white;
+    font-weight: 700;
+    margin-right: 20px;
+    border-radius: 10px;
+    border: solid black 1px;
+    cursor: pointer;
+}
+
+#edit-form p {
+    color: white;
+}
+
+#edit-form {
     margin-bottom: 20px;
     padding: 10px;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    justify-items: center;
 }
 
 form label {
@@ -26,6 +68,9 @@ form label {
 form input, form select, form button {
     margin: 5px 0;
     padding: 8px;
+    width: 200px;
+    border-radius: 10px;
+    border: black solid 1px;
 }
 
 table {
@@ -40,8 +85,26 @@ table, th, td {
     text-align: left;
 }
 
+th {
+    background-color: #aaa;
+}
+
 th, td {
     padding: 10px;
+}
+
+.filtro-box {
+    display: flex;
+    justify-content: space-between;
+}
+
+.filtro-box select {
+    border-radius: 5px;
+    border: none;
+} .filtro-box select:hover{
+    border: none;
+} .filtro-box select:focus{
+    border: none;
 }
 
 .popup {

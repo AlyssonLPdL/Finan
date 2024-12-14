@@ -182,7 +182,7 @@ def download_example():
     ws.append(["ID", "Data", "Quantia", "Descrição", "Valor", "Método de Pagamento", "Tipo"])
     
     # Dados de exemplo
-    ws.append([1, "2023-01-01", 100, "Exemplo de Descrição", 50.5, "Pix", "Gasto / Ganho"])
+    ws.append([1, "2023-01-01", 100, "Exemplo de Descrição", 50.5, "Pix", "Gasto"])
     
     # Salvar o arquivo em memória
     output = io.BytesIO()
