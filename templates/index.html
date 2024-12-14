@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Controle Financeiro</h1>
+    <form method="POST" action="/">
+        <label for="date">Data:</label>
+        <input type="date" id="date" name="date" required>
+        
+        <label for="quantia">Quantia:</label>
+        <input type="number" step="1" id="quantia" name="quantia" required>
+
+        <label for="description">Descrição:</label>
+        <input type="text" id="description" name="description" required>
+        
+        <label for="value">Valor:</label>
+        <input type="number" step="0.01" id="value" name="value" required>
+        
+        <label for="payment_method">Método de Pagamento:</label>
+        <select id="payment_method" name="payment_method" required>
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Credito_c6">Crédito C6</option>
+            <option value="Credito_nu">Crédito Nubank</option>
+        </select>
+        
+        <label for="type">Tipo:</label>
+        <select id="type" name="type" required>
+            <option value="Gasto">Gasto</option>
+            <option value="Ganho">Ganho</option>
+        </select>
+        
+        <button type="submit">Adicionar</button>
+    </form>
+
+    <input type="text" id="search-input" 
+    placeholder="Busque por Data, Descrição, Valor ou Método de Pagamento..." 
+    oninput="filterTable()"
+    style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;"
+    >
+
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    Data
+                    <select id="month-filter" onchange="filterByMonth()">
+                        <option value="">Todos</option>
+                        {% for month in months %}
+                        <option value="{{ month }}" {% if month == month_filter %}selected{% endif %}>
+                            {{ month }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </th>                
+                <th>Quantia</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>
+                    Metodo de pagamento
+                    <select id="payment-filter" onchange="filterByPayment()">
+                        <option value="">Todos</option>
+                        {% for payment_method in payment_methods %}
+                            <option value="{{ payment_method }}" {% if payment_method == payment_filter %}selected{% endif %}>
+                                {{ payment_method }}
+                            </option>
+                        {% endfor %}
+                    </select>                                       
+                </th>
+                <th>Tipo
+                    <select id="tipe-filter" onchange="filterByType()">
+                        <option value="">Todos</option>
+                        {% for type in tipos %}
+                            <option value="{{ type }}" {% if type == tipe_filter %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                        {% endfor %}
+                    </select>  
+                </th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction[1] }}</td>
+                <td>{{ transaction[6] }}</td>
+                <td>{{ transaction[2] }}</td>
+                <td class="{{ 'valor-gasto' if transaction[5] == 'Gasto' else 'valor-ganho' }}">
+                    {{ transaction[3] }}
+                </td>
+                <td class="{% if transaction[4] == 'Dinheiro' %}pagamento-dinheiro{% elif transaction[4] == 'Pix' %}pagamento-pix{% elif transaction[4] == 'Credito_nu' %}pagamento-credito-nu{% elif transaction[4] == 'Credito_c6' %}pagamento-credito-c6{% endif %}">
+                    {{ transaction[4] }}
+                </td>
+                <td class="{{ 'tipo-gasto' if transaction[5] == 'Gasto' else 'tipo-ganho' }}">
+                    {{ transaction[5] }}
+                </td>
+                <td>
+                    <button class="edit-btn" data-id="{{ transaction[0] }}">✏️</button>
+                    <button class="delete-btn" data-id="{{ transaction[0] }}">🗑️</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div id="edit-popup" class="popup hidden">
+        <form id="edit-form">
+            <h2>Editar Transação</h2>
+            <input type="hidden" id="edit-id">
+            <label for="edit-date">Data:</label>
+            <input type="date" id="edit-date" required>
+            <label for="edit-quantia">Quantia:</label>
+            <input type="number" id="edit-quantia" required>
+            <label for="edit-description">Descrição:</label>
+            <input type="text" id="edit-description" required>
+            <label for="edit-value">Valor:</label>
+            <input type="number" step="0.01" id="edit-value" required>
+            <label for="edit-payment-method">Método de Pagamento:</label>
+            <label for="edit-payment-method">Método de Pagamento:</label>
+            <select id="edit-payment-method" required>
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Credito_c6">Crédito C6</option>
+                <option value="Credito_nu">Crédito Nubank</option>
+            </select>
+            <label for="edit-type">Tipo:</label>
+            <select id="edit-type" required>
+                <option value="Gasto">Gasto</option>
+                <option value="Ganho">Ganho</option>
+            </select>
+            <button type="button" id="save-edit-btn">Salvar</button>
+            <button type="button" id="cancel-edit-btn">Cancelar</button>
+        </form>
+    </div>  
+    <script src="/static/popup.js"></script>    
+    <script src="/static/filter.js"></script>
+    <script src="/static/busca.js"></script>        
+</body>
+</html>
