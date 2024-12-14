@@ -3,8 +3,12 @@ import sqlite3
 import io
 import openpyxl
 from openpyxl import Workbook
+import os
 
 app = Flask(__name__)
+
+app.config['UPLOAD_FOLDER'] = 'uploads'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Configuração inicial do banco de dados
 def init_db():
@@ -134,6 +138,58 @@ def generate_excel():
 
     # Enviar a planilha para o cliente
     return send_file(output, as_attachment=True, download_name="transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+def save_excel_to_db(file_path):
+    # Carregar a planilha
+    wb = openpyxl.load_workbook(file_path)
+    ws = wb.active
+    
+    # Iterar pelas linhas da planilha
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
+        for row in ws.iter_rows(min_row=2, values_only=True):  # Ignorar cabeçalho
+            cursor.execute('''
+                INSERT INTO transactions (id, date, quantia, description, value, payment_method, type)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', row)
+        conn.commit()
+
+# Rota para upload da planilha
+@app.route('/upload_excel', methods=['POST'])
+def upload_excel():
+    file = request.files['file']
+    if file and file.filename.endswith('.xlsx'):
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+        
+        # Salvar os dados da planilha no banco
+        save_excel_to_db(file_path)
+        
+        # Redirecionar para a página inicial após o upload
+        return redirect('/')
+
+    return "Arquivo inválido. Por favor, envie um arquivo .xlsx."
+
+# Rota para baixar a planilha de exemplo
+@app.route('/download_example')
+def download_example():
+    # Criar um arquivo de exemplo
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Transações Exemplo"
+    
+    # Cabeçalho da planilha
+    ws.append(["ID", "Data", "Quantia", "Descrição", "Valor", "Método de Pagamento", "Tipo"])
+    
+    # Dados de exemplo
+    ws.append([1, "2023-01-01", 100, "Exemplo de Descrição", 50.5, "Pix", "Gasto / Ganho"])
+    
+    # Salvar o arquivo em memória
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True, download_name="exemplo_transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_transaction(id):

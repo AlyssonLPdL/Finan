@@ -55,4 +55,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cancel-edit-btn').addEventListener('click', () => {
         editPopup.classList.add('hidden');
     });
+
 });

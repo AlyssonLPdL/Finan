@@ -44,7 +44,7 @@
     style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box;"
     >
     <button onclick="window.location.href='/generate_excel'" class="btn-excel">Baixar Planilha Excel</button>
-
+    <button onclick="openUploadPopup()">Enviar Planilha</button>
     <table>
         <thead>
             <tr>
@@ -140,8 +140,36 @@
             <button type="button" id="cancel-edit-btn">Cancelar</button>
         </form>
     </div>  
+
+    <div id="upload-popup" class="popup-upload" style="display:none;">
+        <div class="popup-content">
+            <span class="close" onclick="closeUploadPopup()">&times;</span>
+            <h2>Enviar Planilha de Transações</h2>
+            
+            <!-- Formulário de Upload -->
+            <form action="/upload_excel" method="post" enctype="multipart/form-data">
+                <label for="file">Escolha a planilha (.xlsx):</label>
+                <input type="file" id="file" name="file" accept=".xlsx" required>
+                
+                <button type="submit">Enviar Planilha</button>
+            </form>
+            
+            <br>
+            <!-- Link para Baixar a Planilha de Exemplo -->
+            <a href="/download_example" download="exemplo_transacoes.xlsx">Baixar Planilha de Exemplo</a>
+        </div>
+    </div>
     <script src="/static/popup.js"></script>    
     <script src="/static/filter.js"></script>
-    <script src="/static/busca.js"></script>        
+    <script src="/static/busca.js"></script>   
+    <script>
+    function openUploadPopup() {
+        document.getElementById("upload-popup").style.display = "block";
+    }
+
+    function closeUploadPopup() {
+        document.getElementById("upload-popup").style.display = "none";
+    }
+    </script>     
 </body>
 </html>
