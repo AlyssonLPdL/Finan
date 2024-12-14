@@ -1,5 +1,8 @@
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, send_file
 import sqlite3
+import io
+import openpyxl
+from openpyxl import Workbook
 
 app = Flask(__name__)
 
@@ -104,6 +107,34 @@ def index():
 
     return render_template('index.html', transactions=transactions, months=months, month_filter=month_filter, payment_filter=payment_filter, payment_methods=payment_methods, tipos=tipos, tipe_filter=tipe_filter)
 
+@app.route('/generate_excel', methods=['GET'])
+def generate_excel():
+    # Conectar ao banco de dados e obter as transações
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, date, quantia, description, value, payment_method, type FROM transactions")
+        transactions = cursor.fetchall()
+
+    # Criar um arquivo Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Transações"
+
+    # Cabeçalho da planilha
+    ws.append(["ID", "Data", "Quantia", "Descrição", "Valor", "Método de Pagamento", "Tipo"])
+
+    # Adicionar os dados das transações
+    for transaction in transactions:
+        ws.append(transaction)
+
+    # Salvar a planilha em memória (em vez de salvar fisicamente)
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    # Enviar a planilha para o cliente
+    return send_file(output, as_attachment=True, download_name="transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_transaction(id):
     with sqlite3.connect('finance.db') as conn:
@@ -132,8 +163,6 @@ def edit_transaction(id):
         ''', (data['date'], data['quantia'], data['description'], data['value'], data['payment_method'], data['type'], id))
         conn.commit()
     return jsonify({'success': True})
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
