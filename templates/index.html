@@ -9,14 +9,14 @@
 <body>
     <h1>Controle Financeiro</h1>
     <form class="form-dados" method="POST" action="/">
-        <input type="date" id="date" name="date" required>
+        <input type="date" id="date" name="date">
     
         <input type="text" id="description" name="description" placeholder="Descrição" required>
         <label for="payment_method">Método de Pagamento:</label>
         <label for="type">Tipo:</label>
-        <input type="number" step="1" id="quantia" name="quantia" placeholder="Quantia" required>
+        <input type="number" step="1" id="quantia" name="quantia" placeholder="Quantia">
         <input type="number" step="0.01" id="value" name="value" placeholder="Valor" required>
-        <select id="payment_method" name="payment_method" required>
+        <select id="payment_method" name="payment_method" onchange="toggleParcelasInput()" required>
             <option value="Pix">Pix</option>
             <option value="Dinheiro">Dinheiro</option>
             <option value="Credito_c6">Crédito C6</option>
@@ -27,7 +27,12 @@
             <option value="Ganho">Ganho</option>
         </select>
 
+        <div id="parcelas-container" style="display:none;">
+            <input type="number" name="parcelas" id="parcelas" min="1" placeholder="Parcelas">
+        </div>
+
         <button type="submit">Adicionar</button>
+        
         <div id="spinner" style="display: none;">
             <p>Processando...</p>
             <div class="loader"></div>
@@ -218,6 +223,20 @@
         function closeUploadPopup() {
             document.getElementById("upload-popup").style.display = "none";
         }
+        function toggleParcelasInput() {
+            var paymentMethod = document.getElementById('payment_method').value;
+            var parcelasContainer = document.getElementById('parcelas-container');
+            
+            // Verifica se o método de pagamento é Credito_nu ou Credito_c6
+            if (paymentMethod === 'Credito_c6' || paymentMethod === 'Credito_nu') {
+                parcelasContainer.style.display = 'block'; // Exibe o campo de parcelas
+            } else {
+                parcelasContainer.style.display = 'none'; // Oculta o campo de parcelas
+            }
+        }
+
+        // Chama a função ao carregar a página para garantir que o input de parcelas esteja correto
+        window.onload = toggleParcelasInput;
     </script>      
 </body>
 </html>

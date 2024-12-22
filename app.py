@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, render_template, request, redirect, jsonify, send_file
 import sqlite3
 import io
@@ -38,6 +39,23 @@ def index():
         value = float(request.form['value'])
         payment_method = request.form['payment_method']
         type_ = request.form['type']
+
+        if not date:
+            date = datetime.today().strftime('%Y-%m-%d')  # Formato YYYY-MM-DD
+
+        parcelas = request.form.get('parcelas')  # Pega o valor de parcelas
+        if parcelas:
+            parcelas = int(parcelas)
+        else:
+            parcelas = 1  # Valor padrão para parcelas se não for fornecido
+
+        # Se o método de pagamento for Crédito, adicionar a informação das parcelas na descrição
+        if payment_method in ['Credito_nu', 'Credito_c6']:
+            description = f"{description} - x{parcelas}"
+
+        # Se a quantia não for fornecida, usa o valor padrão de 1
+        if not quantia:
+            quantia = 1  # Valor padrão para quantia
 
         with sqlite3.connect('finance.db') as conn:
             cursor = conn.cursor()
