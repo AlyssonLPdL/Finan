@@ -28,6 +28,10 @@
         </select>
 
         <button type="submit">Adicionar</button>
+        <div id="spinner" style="display: none;">
+            <p>Processando...</p>
+            <div class="loader"></div>
+        </div>
     </form>
 
     <input type="text" id="search-input" 
@@ -145,7 +149,7 @@
             <h2>Enviar Planilha de Transações</h2>
             
             <!-- Formulário de Upload -->
-            <form action="/upload_excel" method="post" enctype="multipart/form-data">
+            <form id="uploadForm" action="/upload_excel" method="post" enctype="multipart/form-data">
                 <label for="file">Escolha a planilha (.xlsx):</label>
                 <input type="file" id="file" name="file" accept=".xlsx" required>
                 
@@ -157,17 +161,63 @@
             <a href="/download_example" download="exemplo_transacoes.xlsx">Baixar Planilha de Exemplo</a>
         </div>
     </div>
+
+
+
     <script src="/static/popup.js"></script>    
     <script src="/static/filter.js"></script>
     <script src="/static/busca.js"></script>   
+    <script src="/static/padrao.js"></script>
     <script>
-    function openUploadPopup() {
-        document.getElementById("upload-popup").style.display = "block";
-    }
+        // Seleciona o formulário, o spinner e o popup
+        const uploadForm = document.getElementById('uploadForm');
+        const spinner = document.getElementById('spinner');
+        const uploadPopup = document.getElementById('upload-popup');
 
-    function closeUploadPopup() {
-        document.getElementById("upload-popup").style.display = "none";
-    }
-    </script>     
+        uploadForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Evita o recarregamento da página
+            
+            // Exibe o spinner
+            spinner.style.display = 'block';
+            
+            // Fecha o popup imediatamente
+            uploadPopup.style.display = 'none';
+            
+            // Cria um objeto FormData para enviar o formulário
+            const formData = new FormData(uploadForm);
+            
+            // Envia o formulário via fetch (AJAX)
+            fetch(uploadForm.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then((response) => {
+                if (response.ok) {
+                    // Espera o processamento do arquivo, então oculta o spinner
+                    spinner.style.display = 'none';
+                    location.reload();
+                } else {
+                    // Em caso de erro, exibe uma mensagem
+                    alert('Erro ao enviar a planilha. Verifique o arquivo e tente novamente.');
+                    spinner.style.display = 'none'; // Garante que o spinner seja ocultado
+                }
+            })
+            .catch((error) => {
+                // Em caso de erro, oculta o spinner e exibe a mensagem de erro
+                spinner.style.display = 'none';
+                alert('Ocorreu um erro ao enviar a planilha.');
+                console.error(error);
+            });
+        });
+
+        // Funções para abrir e fechar o popup
+        function openUploadPopup() {
+            document.getElementById("upload-popup").style.display = "block";
+        }
+
+        function closeUploadPopup() {
+            document.getElementById("upload-popup").style.display = "none";
+        }
+    </script>      
 </body>
 </html>

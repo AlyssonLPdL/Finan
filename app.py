@@ -140,18 +140,28 @@ def generate_excel():
     return send_file(output, as_attachment=True, download_name="transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 def save_excel_to_db(file_path):
-    # Carregar a planilha
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
     
-    # Iterar pelas linhas da planilha
     with sqlite3.connect('finance.db') as conn:
         cursor = conn.cursor()
-        for row in ws.iter_rows(min_row=2, values_only=True):  # Ignorar cabeçalho
-            cursor.execute('''
-                INSERT INTO transactions (id, date, quantia, description, value, payment_method, type)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', row)
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            # Truncar para as primeiras 6 colunas
+            row = row[:6]
+
+            # Validar se a linha tem valores válidos
+            if None in row or len(row) < 6:
+                print(f"Erro na linha: {row} - Dados incompletos ou inválidos.")
+                continue
+
+            try:
+                cursor.execute('''
+                    INSERT INTO transactions (date, quantia, description, value, payment_method, type)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', row)
+            except Exception as e:
+                print(f"Erro ao inserir: {row} - {e}")
+
         conn.commit()
 
 # Rota para upload da planilha
