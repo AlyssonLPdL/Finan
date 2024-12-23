@@ -1,13 +1,16 @@
-import datetime
-from flask import Flask, render_template, request, redirect, jsonify, send_file
+from datetime import datetime
+from flask import Flask, render_template, request, redirect,  url_for, flash, session, jsonify, send_file
 import sqlite3
 import io
 import openpyxl
 from openpyxl import Workbook
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 import os
 from io import BytesIO
 
 app = Flask(__name__)
+app.secret_key = 's3cr3tK3y'
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -24,14 +27,33 @@ def init_db():
                 description TEXT NOT NULL,
                 value REAL NOT NULL,
                 payment_method TEXT NOT NULL,
-                type TEXT NOT NULL
+                type TEXT NOT NULL,
+                user_id INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
             )
         ''')
         conn.commit()
 
 init_db()
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Por favor, faça login para acessar esta página.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     if request.method == 'POST':
         date = request.form['date']
@@ -40,6 +62,11 @@ def index():
         value = float(request.form['value'])
         payment_method = request.form['payment_method']
         type_ = request.form['type']
+
+        user_id = session.get('user_id')
+        if not user_id:
+            flash('Você precisa estar logado para adicionar uma transação.', 'warning')
+            return redirect(url_for('login'))
 
         if not date:
             date = datetime.today().strftime('%Y-%m-%d')  # Formato YYYY-MM-DD
@@ -67,6 +94,7 @@ def index():
             conn.commit()
 
         return redirect('/')
+    pass
 
     search_query = request.args.get('search', '')  # Captura a busca inteligente
     month_year_filter = request.args.get('month_year')  # Captura o filtro de mês (se houver)
@@ -129,6 +157,60 @@ def index():
         months_years = [row[0] for row in cursor.fetchall()]
 
     return render_template('index.html', transactions=transactions, months_years=months_years, month_year_filter=month_year_filter, payment_filter=payment_filter, payment_methods=payment_methods, tipos=tipos, tipe_filter=tipe_filter)
+
+# Tela de login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        with sqlite3.connect('finance.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, password FROM users WHERE email = ?', (email,))
+            user = cursor.fetchone()
+
+            if user and check_password_hash(user[1], password):
+                session['user_id'] = user[0]
+                flash('Login realizado com sucesso!', 'success')
+                return redirect('/')
+            else:
+                flash('Email ou senha inválidos.', 'danger')
+
+    return render_template('login.html')
+
+# Tela de cadastro
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            flash('As senhas não coincidem.', 'danger')
+            return redirect(url_for('register'))
+
+        hashed_password = generate_password_hash(password)
+
+        with sqlite3.connect('finance.db') as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute('INSERT INTO users (email, password) VALUES (?, ?)', (email, hashed_password))
+                conn.commit()
+                flash('Cadastro realizado com sucesso!', 'success')
+                return redirect(url_for('login'))
+            except sqlite3.IntegrityError:
+                flash('O email já está em uso.', 'danger')
+
+    return render_template('register.html')
+
+# Logout
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    flash('Você saiu da sua conta.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/generate_excel', methods=['GET'])
 def generate_excel():
@@ -301,6 +383,21 @@ def edit_transaction(id):
         ''', (data['date'], data['quantia'], data['description'], data['value'], data['payment_method'], data['type'], id))
         conn.commit()
     return jsonify({'success': True})
+
+@app.route('/clear_transactions', methods=['GET', 'POST'])
+def clear_transactions():
+    if request.method == 'POST':
+        # Conectando ao banco de dados e limpando a tabela
+        with sqlite3.connect('finance.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM transactions')
+            conn.commit()
+
+        # Flash message informando que os dados foram limpos
+        flash('Todos os dados da tabela de transações foram apagados!', 'success')
+        return redirect(url_for('index'))  # Redireciona para a página principal (ou outra que você preferir)
+
+    return render_template('clear_transactions.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
