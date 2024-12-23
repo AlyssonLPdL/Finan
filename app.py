@@ -5,6 +5,7 @@ import io
 import openpyxl
 from openpyxl import Workbook
 import os
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -68,7 +69,7 @@ def index():
         return redirect('/')
 
     search_query = request.args.get('search', '')  # Captura a busca inteligente
-    month_filter = request.args.get('month')  # Captura o filtro de mês (se houver)
+    month_year_filter = request.args.get('month_year')  # Captura o filtro de mês (se houver)
     payment_filter = request.args.get('payment_method', '')  # Pega o filtro da URL
     tipe_filter = request.args.get('type', '')
     payment_methods = ["Pix", "Dinheiro", "Credito_c6", "Credito_nu"]
@@ -81,9 +82,9 @@ def index():
         query += " AND payment_method = ?"
         params.append(payment_filter)
         
-    if month_filter:
-        query += " AND strftime('%m', date) = ?"
-        params.append(month_filter)
+    if month_year_filter:
+        query += " AND strftime('%Y-%m', date) = ?"
+        params.append(month_year_filter)
 
     if tipe_filter:
         query += " AND type = ?"
@@ -124,10 +125,10 @@ def index():
         transactions = cursor.fetchall()
 
         # Obter todos os meses únicos disponíveis
-        cursor.execute("SELECT DISTINCT strftime('%m', date) as month FROM transactions ORDER BY month")
-        months = [row[0] for row in cursor.fetchall()]
+        cursor.execute("SELECT DISTINCT strftime('%Y-%m', date) as month_year FROM transactions ORDER BY month_year")
+        months_years = [row[0] for row in cursor.fetchall()]
 
-    return render_template('index.html', transactions=transactions, months=months, month_filter=month_filter, payment_filter=payment_filter, payment_methods=payment_methods, tipos=tipos, tipe_filter=tipe_filter)
+    return render_template('index.html', transactions=transactions, months_years=months_years, month_year_filter=month_year_filter, payment_filter=payment_filter, payment_methods=payment_methods, tipos=tipos, tipe_filter=tipe_filter)
 
 @app.route('/generate_excel', methods=['GET'])
 def generate_excel():
@@ -218,6 +219,59 @@ def download_example():
     output.seek(0)
     
     return send_file(output, as_attachment=True, download_name="exemplo_transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@app.route('/download_relatorio')
+def download_relatorio():
+    # Conectando ao banco de dados
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
+
+        # Consulta para obter os meses e anos e os totais por método de pagamento
+        query = '''
+            SELECT strftime('%Y-%m', date) AS month_year,
+                   SUM(CASE WHEN payment_method = 'Pix' THEN value ELSE 0 END) AS pix_total,
+                   SUM(CASE WHEN payment_method = 'Dinheiro' THEN value ELSE 0 END) AS dinheiro_total,
+                   SUM(CASE WHEN payment_method = 'Credito_nu' THEN value ELSE 0 END) AS cartao_nu_total,
+                   SUM(CASE WHEN payment_method = 'Credito_c6' THEN value ELSE 0 END) AS cartao_c6_total
+            FROM transactions
+            WHERE type = 'Gasto'
+            GROUP BY month_year
+            ORDER BY month_year
+        '''
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    # Criando a planilha
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Relatório Financeiro"
+
+    # Cabeçalhos
+    headers = ["Data (Mês/Ano)", "Pix", "Dinheiro", "Cartão Nu", "Cartão C6"]
+    sheet.append(headers)
+
+    # Adicionando os dados ao Excel
+    for row in rows:
+        sheet.append(row)
+
+    # Ajustando a largura das colunas
+    for column in sheet.columns:
+        max_length = max(len(str(cell.value)) for cell in column if cell.value)
+        column_letter = column[0].column_letter
+        sheet.column_dimensions[column_letter].width = max_length + 2
+
+    # Salvando a planilha em um buffer
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+
+    # Enviando o arquivo para download
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="relatorio_financeiro.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_transaction(id):

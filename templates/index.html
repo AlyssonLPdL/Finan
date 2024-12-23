@@ -43,19 +43,20 @@
     placeholder="Busque por Data, Descrição, Valor ou Método de Pagamento..." 
     oninput="filterTable()"
     >
-    <button onclick="window.location.href='/generate_excel'" class="btn-excel">Baixar Planilha Excel</button>
+    <button onclick="window.location.href='/generate_excel'" class="btn-excel">Baixar Planilha</button>
     <button onclick="openUploadPopup()" class="btn-planilha">Enviar Planilha</button>
+    <button onclick="window.location.href='/download_relatorio'" class="btn-relatorio">Baixar Relatorio</button>
     <table>
         <thead>
             <tr>
                 <th>
                     <div class="filtro-box">
                     Data
-                    <select id="month-filter" onchange="filterByMonth()">
+                    <select id="month-year-filter" onchange="filterByMonthYear()">
                         <option value="">Todos</option>
-                        {% for month in months %}
-                        <option value="{{ month }}" {% if month == month_filter %}selected{% endif %}>
-                            {{ month }}
+                        {% for month_year in months_years %}
+                        <option value="{{ month_year }}" {% if month_year == month_year_filter %}selected{% endif %}>
+                            {{ month_year }}
                         </option>
                         {% endfor %}
                     </select>

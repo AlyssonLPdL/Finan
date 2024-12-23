@@ -1,6 +1,6 @@
-function filterByMonth() {
-    const selectedMonth = document.getElementById('month-filter').value;
-    const queryString = selectedMonth ? `?month=${selectedMonth}` : '';
+function filterByMonthYear() {
+    const selectedMonthYear = document.getElementById('month-year-filter').value;
+    const queryString = selectedMonthYear ? `?month_year=${selectedMonthYear}` : '';
     window.location.href = '/' + queryString;
 }
 

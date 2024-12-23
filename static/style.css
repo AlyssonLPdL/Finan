@@ -33,16 +33,16 @@ h1 {
     margin-right: 50px;
 }
 
-.btn-excel, .btn-planilha {
+.btn-excel, .btn-planilha, .btn-relatorio {
     height: 30px;
     background-color: rgb(48, 123, 10);
     color: white;
     font-weight: 700;
-    margin-right: 20px;
+    margin-right: 10px;
     border-radius: 10px;
     border: solid black 1px;
     cursor: pointer;
-} .btn-excel:hover, .btn-planilha:hover {
+} .btn-excel:hover, .btn-planilha:hover, .btn-relatorio:hover {
     background-color: rgb(36, 94, 7);
 }
 
