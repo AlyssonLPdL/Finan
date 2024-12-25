@@ -40,14 +40,6 @@ def init_db():
         ''')
         conn.commit()
 
-        user_id = 1  # Supondo que o user_id que você quer buscar seja 1, por exemplo
-    cursor.execute('''
-        SELECT * FROM transactions WHERE user_id = ? ORDER BY date
-    ''', (user_id,))
-    
-    transactions = cursor.fetchall()  # Obtém todas as transações
-    print(transactions)
-
 init_db()
 
 def login_required(f):
