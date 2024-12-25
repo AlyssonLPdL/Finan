@@ -16,7 +16,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configuração inicial do banco de dados
 def init_db():
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS transactions (
@@ -84,7 +84,7 @@ def index():
         if not quantia:
             quantia = 1  # Valor padrão para quantia
 
-        with sqlite3.connect('finance.db') as conn:
+        with sqlite3.connect('tmp/finance.db') as conn:
             cursor = conn.cursor()
             cursor.execute('''
             INSERT INTO transactions (date, quantia, description, value, payment_method, type, user_id)
@@ -145,7 +145,7 @@ def index():
 
     query += ' ORDER BY date'
 
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         cursor.execute(query, params)
         transactions = cursor.fetchall()
@@ -168,7 +168,7 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        with sqlite3.connect('finance.db') as conn:
+        with sqlite3.connect('tmp/finance.db') as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT id, password FROM users WHERE email = ?', (email,))
             user = cursor.fetchone()
@@ -196,7 +196,7 @@ def register():
 
         hashed_password = generate_password_hash(password)
 
-        with sqlite3.connect('finance.db') as conn:
+        with sqlite3.connect('tmp/finance.db') as conn:
             cursor = conn.cursor()
             try:
                 cursor.execute('INSERT INTO users (email, password) VALUES (?, ?)', (email, hashed_password))
@@ -218,7 +218,7 @@ def logout():
 @app.route('/generate_excel', methods=['GET'])
 def generate_excel():
     # Conectar ao banco de dados e obter as transações
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, date, quantia, description, value, payment_method, type FROM transactions")
         transactions = cursor.fetchall()
@@ -268,7 +268,7 @@ def save_excel_to_db(file_path):
         # Verificar se a transação já foi inserida (para evitar duplicações)
         date = row[0]
         description = row[2]
-        cursor = sqlite3.connect('finance.db').cursor()
+        cursor = sqlite3.connect('tmp/finance.db').cursor()
         cursor.execute('SELECT * FROM transactions WHERE date = ? AND description = ?', (date, description))
         existing_transaction = cursor.fetchone()
 
@@ -276,7 +276,7 @@ def save_excel_to_db(file_path):
             continue  # Pular a inserção da transação duplicada
 
         try:
-            with sqlite3.connect('finance.db') as conn:
+            with sqlite3.connect('tmp/finance.db') as conn:
                 cursor = conn.cursor()
                 cursor.execute(''' 
                     INSERT INTO transactions (date, quantia, description, value, payment_method, type, user_id)
@@ -348,7 +348,7 @@ def download_example():
 @app.route('/download_relatorio')
 def download_relatorio():
     # Conectando ao banco de dados
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
 
         # Consulta para obter os meses e anos e os totais por método de pagamento
@@ -400,7 +400,7 @@ def download_relatorio():
 
 @app.route('/delete/<int:id>', methods=['POST'])
 def delete_transaction(id):
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         cursor.execute('DELETE FROM transactions WHERE id = ?', (id,))
         conn.commit()
@@ -408,7 +408,7 @@ def delete_transaction(id):
 
 @app.route('/get_transaction/<int:id>', methods=['GET'])
 def get_transaction(id):
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM transactions WHERE id = ?', (id,))
         transaction = cursor.fetchone()
@@ -417,7 +417,7 @@ def get_transaction(id):
 @app.route('/edit/<int:id>', methods=['POST'])
 def edit_transaction(id):
     data = request.json
-    with sqlite3.connect('finance.db') as conn: 
+    with sqlite3.connect('tmp/finance.db') as conn: 
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE transactions
@@ -430,7 +430,7 @@ def edit_transaction(id):
 @app.route('/admin', methods=['GET'])
 @login_required
 def admin():
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
 
         # Obter todos os usuários
@@ -443,7 +443,7 @@ def admin():
 @login_required
 def delete_account(id):
     # Apagar transações associadas ao usuário
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         
         # Apagar todas as transações do usuário
@@ -459,7 +459,7 @@ def delete_account(id):
 @app.route('/delete_dados', methods=['GET'])
 def delete_dados():
     # Apagar transações associadas ao usuário
-    with sqlite3.connect('finance.db') as conn:
+    with sqlite3.connect('tmp/finance.db') as conn:
         cursor = conn.cursor()
         
         # Apagar todas as transações do usuário
