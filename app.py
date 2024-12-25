@@ -11,9 +11,8 @@ from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = 's3cr3tK3y'
-
-app.config['UPLOAD_FOLDER'] = 'uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configuração inicial do banco de dados
 def init_db():
@@ -40,6 +39,14 @@ def init_db():
             )
         ''')
         conn.commit()
+
+        user_id = 1  # Supondo que o user_id que você quer buscar seja 1, por exemplo
+    cursor.execute('''
+        SELECT * FROM transactions WHERE user_id = ? ORDER BY date
+    ''', (user_id,))
+    
+    transactions = cursor.fetchall()  # Obtém todas as transações
+    print(transactions)
 
 init_db()
 
@@ -88,13 +95,12 @@ def index():
         with sqlite3.connect('finance.db') as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO transactions (date, quantia, description, value, payment_method, type)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (date, quantia, description, value, payment_method, type_))
+            INSERT INTO transactions (date, quantia, description, value, payment_method, type, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (date, quantia, description, value, payment_method, type_, user_id))
             conn.commit()
 
         return redirect('/')
-    pass
 
     search_query = request.args.get('search', '')  # Captura a busca inteligente
     month_year_filter = request.args.get('month_year')  # Captura o filtro de mês (se houver)
@@ -103,8 +109,8 @@ def index():
     payment_methods = ["Pix", "Dinheiro", "Credito_c6", "Credito_nu"]
     tipos = ["Gasto", "Ganho"]
 
-    query = "SELECT * FROM transactions WHERE 1=1"  # Consulta base
-    params = []
+    query = "SELECT * FROM transactions WHERE user_id = ?"
+    params = [session.get('user_id')]
 
     if payment_filter:
         query += " AND payment_method = ?"
@@ -151,6 +157,11 @@ def index():
         cursor = conn.cursor()
         cursor.execute(query, params)
         transactions = cursor.fetchall()
+
+        print(query)
+        print(params)
+        user_id = session.get('user_id')
+        print(f"User ID: {user_id}")  # Verifique o valor de user_id
 
         # Obter todos os meses únicos disponíveis
         cursor.execute("SELECT DISTINCT strftime('%Y-%m', date) as month_year FROM transactions ORDER BY month_year")
@@ -241,45 +252,85 @@ def generate_excel():
     return send_file(output, as_attachment=True, download_name="transacoes.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 def save_excel_to_db(file_path):
-    wb = openpyxl.load_workbook(file_path)
-    ws = wb.active
-    
-    with sqlite3.connect('finance.db') as conn:
-        cursor = conn.cursor()
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            # Truncar para as primeiras 6 colunas
-            row = row[:6]
+    try:
+        print(f"Tentando abrir o arquivo: {file_path}")
+        wb = openpyxl.load_workbook(file_path)
+        ws = wb.active
+        print("Planilha carregada com sucesso.")
+    except Exception as e:
+        print(f"Erro ao carregar a planilha: {e}")
+        raise
 
-            # Validar se a linha tem valores válidos
-            if None in row or len(row) < 6:
-                print(f"Erro na linha: {row} - Dados incompletos ou inválidos.")
-                continue
+    # Obtenha o user_id da sessão
+    user_id = session.get('user_id')
+    if not user_id:
+        print("Usuário não autenticado. Não é possível salvar as transações.")
+        return
 
-            try:
-                cursor.execute('''
-                    INSERT INTO transactions (date, quantia, description, value, payment_method, type)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', row)
-            except Exception as e:
-                print(f"Erro ao inserir: {row} - {e}")
+    # Verifique as primeiras linhas para garantir que os dados estão sendo lidos
+    for row in ws.iter_rows(min_row=2, values_only=True):  # Pular o cabeçalho
+        # Validar se a linha tem valores válidos
+        if None in row or len(row) < 6:
+            continue
 
-        conn.commit()
+        # Verificar se a transação já foi inserida (para evitar duplicações)
+        date = row[0]
+        description = row[2]
+        cursor = sqlite3.connect('finance.db').cursor()
+        cursor.execute('SELECT * FROM transactions WHERE date = ? AND description = ?', (date, description))
+        existing_transaction = cursor.fetchone()
+
+        if existing_transaction:
+            continue  # Pular a inserção da transação duplicada
+
+        try:
+            with sqlite3.connect('finance.db') as conn:
+                cursor = conn.cursor()
+                cursor.execute(''' 
+                    INSERT INTO transactions (date, quantia, description, value, payment_method, type, user_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', row[:6] + (user_id,))  # Inclui o user_id ao salvar
+                conn.commit()
+        except Exception as e:
+            print(f"Erro ao inserir: {row} - {e}")
+            continue  # Ignorar erro e continuar com a próxima linha
 
 # Rota para upload da planilha
 @app.route('/upload_excel', methods=['POST'])
 def upload_excel():
     file = request.files['file']
     if file and file.filename.endswith('.xlsx'):
+        # Caminho do arquivo
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
-        
-        # Salvar os dados da planilha no banco
-        save_excel_to_db(file_path)
-        
-        # Redirecionar para a página inicial após o upload
-        return redirect('/')
 
-    return "Arquivo inválido. Por favor, envie um arquivo .xlsx."
+        # Verificar se o arquivo já existe e renomeá-lo se necessário
+        if os.path.exists(file_path):
+            base_name, ext = os.path.splitext(file.filename)
+            counter = 1
+            while os.path.exists(file_path):
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{base_name} ({counter}){ext}")
+                counter += 1
+
+        try:
+            # Salvar o arquivo no diretório uploads
+            file.save(file_path)
+
+            # Processar a planilha e salvar os dados no banco de dados
+            save_excel_to_db(file_path)
+
+            # Após salvar no banco, pode remover o arquivo, se não for mais necessário
+            os.remove(file_path)
+
+            flash("Planilha carregada e dados inseridos no banco de dados com sucesso!", "success")
+            return redirect('/')
+
+        except Exception as e:
+            print(f"Erro ao processar a planilha: {e}")
+            flash("Ocorreu um erro ao enviar a planilha. Tente novamente mais tarde.", "danger")
+            return redirect('/')
+
+    flash("Arquivo inválido. Por favor, envie um arquivo .xlsx.", "danger")
+    return redirect('/')
 
 # Rota para baixar a planilha de exemplo
 @app.route('/download_example')
@@ -384,20 +435,46 @@ def edit_transaction(id):
         conn.commit()
     return jsonify({'success': True})
 
-@app.route('/clear_transactions', methods=['GET', 'POST'])
-def clear_transactions():
-    if request.method == 'POST':
-        # Conectando ao banco de dados e limpando a tabela
-        with sqlite3.connect('finance.db') as conn:
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM transactions')
-            conn.commit()
+@app.route('/admin', methods=['GET'])
+@login_required
+def admin():
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
 
-        # Flash message informando que os dados foram limpos
-        flash('Todos os dados da tabela de transações foram apagados!', 'success')
-        return redirect(url_for('index'))  # Redireciona para a página principal (ou outra que você preferir)
+        # Obter todos os usuários
+        cursor.execute('SELECT id, email FROM users')
+        users = cursor.fetchall()
 
-    return render_template('clear_transactions.html')
+    return render_template('admin.html', users=users)
+
+@app.route('/delete_account/<int:id>', methods=['POST'])
+@login_required
+def delete_account(id):
+    # Apagar transações associadas ao usuário
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
+        
+        # Apagar todas as transações do usuário
+        cursor.execute('DELETE FROM transactions WHERE user_id = ?', (id,))
+        
+        # Apagar o usuário
+        cursor.execute('DELETE FROM users WHERE id = ?', (id,))
+        conn.commit()
+
+    flash('Conta e dados apagados com sucesso.', 'success')
+    return redirect(url_for('admin'))
+
+@app.route('/delete_dados', methods=['GET'])
+def delete_dados():
+    # Apagar transações associadas ao usuário
+    with sqlite3.connect('finance.db') as conn:
+        cursor = conn.cursor()
+        
+        # Apagar todas as transações do usuário
+        cursor.execute('DELETE FROM transactions')  # Corrigido: comando DELETE
+        conn.commit()
+
+    return render_template('clear_transactions.html', success=True)
 
 if __name__ == '__main__':
     app.run(debug=True)

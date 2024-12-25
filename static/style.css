@@ -189,37 +189,38 @@ th[data-sort="desc"]:after {
 }
 
 .valor-gasto {
-    color: red;
+    color: red !important;
 }
 
 .valor-ganho {
-    color: green;
+    color: green !important;
 }
 
 .tipo-gasto {
-    color: red;
+    color: red !important;
 }
 
 .tipo-ganho {
-    color: green;
+    color: green !important;
 }
 
 .pagamento-dinheiro {
-    color: #006400; /* Verde escuro */
+    color: #006400 !important; /* Verde escuro */
 }
 
 .pagamento-pix {
-    color: #1ec2f8; /* Azul claro */
+    color: #1ec2f8 !important; /* Azul claro */
 }
 
 .pagamento-credito-nu {
-    color: #800080; /* Roxo */
+    color: #800080 !important; /* Roxo */
 }
 
 .pagamento-credito-c6 {
-    color: #000000; /* Preto */
-    font-weight: 600;
-}
+    color: #000000 !important; /* Preto */
+    font-weight: 600 !important;
+} 
+
 
 /* Spinner container */
 #spinner {

@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <a href="/login">Login</a>
+    
     <h1>Controle Financeiro</h1>
     <form class="form-dados" method="POST" action="/">
         <input type="date" id="date" name="date">
@@ -96,27 +98,34 @@
         </thead>
         
         <tbody>
-            {% for transaction in transactions %}
-            <tr>
-                <td>{{ transaction[1] }}</td>
-                <td>{{ transaction[6] }}</td>
-                <td>{{ transaction[2] }}</td>
-                <td class="{{ 'valor-gasto' if transaction[5] == 'Gasto' else 'valor-ganho' }}">
-                    {{ transaction[3] }}
-                </td>
-                <td class="{% if transaction[4] == 'Dinheiro' %}pagamento-dinheiro{% elif transaction[4] == 'Pix' %}pagamento-pix{% elif transaction[4] == 'Credito_nu' %}pagamento-credito-nu{% elif transaction[4] == 'Credito_c6' %}pagamento-credito-c6{% endif %}">
-                    {{ transaction[4] }}
-                </td>
-                <td class="{{ 'tipo-gasto' if transaction[5] == 'Gasto' else 'tipo-ganho' }}">
-                    {{ transaction[5] }}
-                </td>
-                <td>
-                    <button class="edit-btn" data-id="{{ transaction[0] }}">✏️</button>
-                    <button class="delete-btn" data-id="{{ transaction[0] }}">🗑️</button>
-                </td>
-            </tr>
-            {% endfor %}
+            {% if transactions %}
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction[1] }}</td>
+                    <td>{{ transaction[2] }}</td>
+                    <td>{{ transaction[3] }}</td>
+                    <td class="{{ 'valor-gasto' if transaction[6] == 'Gasto' else 'valor-ganho' }}">
+                        {{ transaction[4] }}
+                    </td>
+                    <td class="{% if transaction[5] == 'Dinheiro' %}pagamento-dinheiro{% elif transaction[5] == 'Pix' %}pagamento-pix{% elif transaction[5] == 'Credito_nu' %}pagamento-credito-nu{% elif transaction[5] == 'Credito_c6' %}pagamento-credito-c6{% endif %}">
+                        {{ transaction[5] }}
+                    </td>
+                    <td class="{{ 'tipo-gasto' if transaction[6] == 'Gasto' else 'tipo-ganho' }}">
+                        {{ transaction[6] }}
+                    </td>
+                    <td>
+                        <button class="edit-btn" data-id="{{ transaction[0] }}">✏️</button>
+                        <button class="delete-btn" data-id="{{ transaction[0] }}">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="7">Nenhuma transação encontrada.</td>
+                </tr>
+            {% endif %}
         </tbody>
+        
     </table>
     
     <div id="edit-popup" class="popup hidden">
@@ -199,20 +208,20 @@
             })
             .then((response) => {
                 if (response.ok) {
-                    // Espera o processamento do arquivo, então oculta o spinner
+                    // Wait for the file processing to finish and then hide the spinner
                     spinner.style.display = 'none';
-                    location.reload();
+                    location.reload();  // Reload the page to reflect changes (e.g., uploaded data)
                 } else {
-                    // Em caso de erro, exibe uma mensagem
+                    // Show an error message if the file upload fails
                     alert('Erro ao enviar a planilha. Verifique o arquivo e tente novamente.');
-                    spinner.style.display = 'none'; // Garante que o spinner seja ocultado
+                    spinner.style.display = 'none';  // Hide the spinner even in case of error
                 }
             })
             .catch((error) => {
-                // Em caso de erro, oculta o spinner e exibe a mensagem de erro
-                spinner.style.display = 'none';
-                alert('Ocorreu um erro ao enviar a planilha.');
-                console.error(error);
+                // Handle any network errors
+                console.error('Erro ao enviar a planilha:', error);
+                alert('Erro de rede. Tente novamente mais tarde.');
+                spinner.style.display = 'none';  // Hide the spinner in case of error
             });
         });
 

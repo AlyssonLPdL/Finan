@@ -7,9 +7,9 @@
 </head>
 <body>
     <h2>Deseja realmente limpar todos os dados da tabela de transações?</h2>
-    <form method="POST">
-        <button type="submit">Limpar Dados</button>
-    </form>
+    <a href="{{ url_for('delete_dados') }}">
+        <button>Limpar Dados</button>
+    </a>
     <br>
     <a href="{{ url_for('index') }}">Cancelar</a>
 </body>

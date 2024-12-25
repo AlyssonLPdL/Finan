@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração</title>
+</head>
+<body>
+    <h1>Painel de Administração</h1>
+    <p>Gerencie os usuários e apague contas e dados relacionados.</p>
+
+    {% if users %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user[0] }}</td>
+                        <td>{{ user[1] }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_account', id=user[0]) }}" method="POST">
+                                <button type="submit" onclick="return confirm('Tem certeza que deseja apagar esta conta? Todos os dados relacionados serão apagados.')">Apagar Conta</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhum usuário encontrado.</p>
+    {% endif %}
+</body>
+</html>
