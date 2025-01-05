@@ -14,11 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Preenchendo os campos com os dados
             document.getElementById('edit-id').value = data[0]; // Usando 'data.id' em vez de 'data[0]'
             document.getElementById('edit-date').value = data[1];
-            document.getElementById('edit-quantia').value = data[6];
-            document.getElementById('edit-description').value = data[2];
-            document.getElementById('edit-value').value = data[3];
-            document.getElementById('edit-payment-method').value = data[4];
-            document.getElementById('edit-type').value = data[5];
+            document.getElementById('edit-quantia').value = data[2];
+            document.getElementById('edit-description').value = data[3];
+            document.getElementById('edit-value').value = data[4];
+            document.getElementById('edit-payment-method').value = data[5];
+            document.getElementById('edit-type').value = data[6];
 
             editPopup.classList.remove('hidden');
         });
