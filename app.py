@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 from io import BytesIO
+import subprocess
 
 db_path = r'C:\Users\User\OneDrive\Área de Trabalho\Finan\tmp\finance.db'
 
@@ -91,8 +92,17 @@ def index():
             cursor.execute('''
             INSERT INTO transactions (date, quantia, description, value, payment_method, type, user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (date, quantia, description, value, payment_method, type_, user_id))
+            ''', (date, quantia, description, value, payment_method, type_, user_id))
             conn.commit()
+
+        # Comandos Git automáticos após a inserção
+        try:
+            subprocess.run(["git", "add", "."], check=True)
+            subprocess.run(["git", "commit", "-m", f"Add transaction: {description}"], check=True)
+            subprocess.run(["git", "push"], check=True)
+            print("Mudanças commitadas e enviadas para o repositório.")
+        except subprocess.CalledProcessError as e:
+            print(f"Erro ao executar comandos Git: {e}")
 
         return redirect('/')
 
