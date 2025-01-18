@@ -9,6 +9,7 @@ from functools import wraps
 import os
 from io import BytesIO
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 
 db_path = r'C:\Users\User\OneDrive\Área de Trabalho\Finan\tmp\finance.db'
 
@@ -54,6 +55,19 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+executor = ThreadPoolExecutor(max_workers=1)
+
+def run_git_commands(description):
+    """Função para executar os comandos Git."""
+    try:
+        subprocess.run(["git", "add", "."], check=True)
+        subprocess.run(["git", "commit", "-m", f"Add transaction: {description}"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("Mudanças commitadas e enviadas para o repositório.")
+    except subprocess.CalledProcessError as e:
+        print(f"Erro ao executar comandos Git: {e}")
+
+
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -96,13 +110,7 @@ def index():
             conn.commit()
 
         # Comandos Git automáticos após a inserção
-        try:
-            subprocess.run(["git", "add", "."], check=True)
-            subprocess.run(["git", "commit", "-m", f"Add transaction: {description}"], check=True)
-            subprocess.run(["git", "push"], check=True)
-            print("Mudanças commitadas e enviadas para o repositório.")
-        except subprocess.CalledProcessError as e:
-            print(f"Erro ao executar comandos Git: {e}")
+        executor.submit(run_git_commands, description)
 
         return redirect('/')
 
